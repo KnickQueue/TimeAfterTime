@@ -14,11 +14,14 @@ import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.toArgb
 import kotlinx.coroutines.delay
 import kotlin.math.*
+import java.time.Instant
+import java.time.ZoneId
 
 @Composable
 fun AnalogClock(
     modifier: Modifier = Modifier,
     timeSourceMs: () -> Long,
+    zoneId: ZoneId,
     showNumerals: Boolean,
     ambientMode: Boolean,
     accentColor: Color
@@ -67,10 +70,10 @@ fun AnalogClock(
         if (showNumerals) drawNumerals(cx, cy, radius * 0.74f, onBg)
 
         val ms = nowMs.longValue
-        val totalSeconds = (ms % 60_000L).toFloat() / 1000f
-        val seconds = totalSeconds % 60f
-        val minutes = ((ms / 1000 / 60) % 60).toFloat() + (seconds / 60f)
-        val hours = ((ms / 1000 / 60 / 60) % 12).toFloat() + (minutes / 60f)
+        val zoned = Instant.ofEpochMilli(ms).atZone(zoneId)
+        val seconds = zoned.second.toFloat() + zoned.nano / 1_000_000_000f
+        val minutes = zoned.minute.toFloat() + seconds / 60f
+        val hours = (zoned.hour % 12).toFloat() + minutes / 60f
 
         val hourLen = radius * 0.55f
         val minLen  = radius * 0.75f
