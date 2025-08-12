@@ -1,0 +1,2 @@
+-keep class com.lyft.kronos.** { *; }
+-dontwarn com.lyft.kronos.**
