@@ -44,7 +44,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         val kronosClock: KronosClock =
-            (application as KronosApp).kronosClock
+            (application as KronosApp).kronos
 
         setContent {
             KronosClockTheme {
@@ -72,12 +72,10 @@ private fun MainScreen(kronosClock: KronosClock) {
                 grants[Manifest.permission.ACCESS_COARSE_LOCATION] == true
     }
 
-    // Update Kronos time periodically (Kronos syncs in background from Application)
     LaunchedEffect(Unit) {
         kronosNow = kronosClock.now()
     }
 
-    // Fetch location → locality/country + keep current ZoneId (system)
     LaunchedEffect(hasLocationPerm) {
         if (!hasLocationPerm) return@LaunchedEffect
         val loc = try {
@@ -85,7 +83,6 @@ private fun MainScreen(kronosClock: KronosClock) {
         } catch (_: Exception) { null }
 
         if (loc != null) {
-            // Best-effort reverse geocode for a friendly name
             val geo = Geocoder(context, Locale.getDefault())
             val addr = withContext(Dispatchers.IO) {
                 @Suppress("DEPRECATION")
@@ -146,8 +143,6 @@ private fun MainScreen(kronosClock: KronosClock) {
     }
 }
 
-/* ---------- Helpers ---------- */
-
 private fun isLocationGranted(context: android.content.Context): Boolean {
     val fine = ContextCompat.checkSelfPermission(
         context, Manifest.permission.ACCESS_FINE_LOCATION
@@ -158,7 +153,6 @@ private fun isLocationGranted(context: android.content.Context): Boolean {
     return fine || coarse
 }
 
-// Lightweight suspend wrapper for FusedLocationProviderClient.lastLocation
 private suspend fun com.google.android.gms.location.FusedLocationProviderClient.awaitOrNull()
         : android.location.Location? = withContext(Dispatchers.IO) {
     try {
