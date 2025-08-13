@@ -9,12 +9,12 @@ android {
     compileSdk = 34
 
     defaultConfig {
-    applicationId = "com.example.kronosanalogclock"
-    minSdk = 26   // <- was 24
-    targetSdk = 34
-    versionCode = 1
-    versionName = "1.0"
-}
+        applicationId = "com.example.kronosanalogclock"
+        minSdk = 26   // <- was 24
+        targetSdk = 34
+        versionCode = 1
+        versionName = "1.0"
+    }
 
     buildTypes {
         release {
@@ -64,4 +64,5 @@ dependencies {
     implementation("androidx.room:room-ktx:$roomVersion")
     kapt("androidx.room:room-compiler:$roomVersion")
 }
+
 
