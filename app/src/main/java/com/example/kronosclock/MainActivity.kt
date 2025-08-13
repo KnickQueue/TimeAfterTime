@@ -15,15 +15,19 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
-import com.example.kronosclock.ui.theme.KronosClockTheme
 import com.example.kronosclock.data.WatchDatabase
+import com.example.kronosclock.ui.theme.KronosClockTheme
 import com.google.android.gms.location.LocationServices
 import com.lyft.kronos.KronosClock
 import kotlinx.coroutines.delay
@@ -92,8 +96,12 @@ private fun KronosClockApp() {
         }
     }
 
-    val dateFmt = remember { DateTimeFormatter.ofPattern("EEE, MMM d uuuu").withLocale(Locale.getDefault()) }
-    val timeFmt = remember { DateTimeFormatter.ofPattern("hh:mm:ss a").withLocale(Locale.getDefault()) }
+    val dateFmt = remember {
+        DateTimeFormatter.ofPattern("EEE, MMM d uuuu").withLocale(Locale.getDefault())
+    }
+    val timeFmt = remember {
+        DateTimeFormatter.ofPattern("hh:mm:ss a").withLocale(Locale.getDefault())
+    }
 
     if (showWatches) {
         WatchListScreen(
@@ -110,7 +118,11 @@ private fun KronosClockApp() {
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp)
         ) {
-            Text("Kronos Clock", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+            Text(
+                "Kronos Clock",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold
+            )
             Spacer(Modifier.height(12.dp))
 
             ElevatedCard(Modifier.padding(end = 8.dp)) {
@@ -119,7 +131,10 @@ private fun KronosClockApp() {
                     Text(dateFmt.withZone(zoneId).format(ntpNow))
                     Spacer(Modifier.height(12.dp))
                     Text("Time", fontWeight = FontWeight.SemiBold)
-                    Text(timeFmt.withZone(zoneId).format(ntpNow), style = MaterialTheme.typography.displaySmall)
+                    Text(
+                        timeFmt.withZone(zoneId).format(ntpNow),
+                        style = MaterialTheme.typography.displaySmall
+                    )
                     Spacer(Modifier.height(12.dp))
                     Row { Text("Zone: ", fontWeight = FontWeight.SemiBold); Text(zoneId.id) }
                     city?.let { Row { Text("City: ", fontWeight = FontWeight.SemiBold); Text(it) } }
@@ -131,12 +146,19 @@ private fun KronosClockApp() {
             Card {
                 Column(Modifier.padding(16.dp)) {
                     Text("NTP Status", fontWeight = FontWeight.SemiBold)
-                    Text(if (isSynced) "Sync in progress / using Kronos time when available" else "Not synced yet")
+                    Text(
+                        if (isSynced)
+                            "Sync in progress / using Kronos time when available"
+                        else
+                            "Not synced yet"
+                    )
                     lastSyncStatus?.let { Text(it) }
                     Spacer(Modifier.height(8.dp))
                     Row {
                         Button(onClick = {
-                            kronos.sync(); isSynced = true; lastSyncStatus = "Manual sync triggered"
+                            kronos.sync()
+                            isSynced = true
+                            lastSyncStatus = "Manual sync triggered"
                         }) { Text("Sync Now") }
 
                         Spacer(Modifier.width(12.dp))
