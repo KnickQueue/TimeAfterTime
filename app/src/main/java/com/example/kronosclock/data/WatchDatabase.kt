@@ -1,4 +1,4 @@
-package com.example.kronosclock.data
+package com.example.kronosanalogclock.data
 
 import android.content.Context
 import androidx.room.Database

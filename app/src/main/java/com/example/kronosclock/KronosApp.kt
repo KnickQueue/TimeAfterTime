@@ -1,13 +1,14 @@
-package com.example.kronosclock
+package com.example.kronosanalogclock
 
 import android.app.Application
 import com.lyft.kronos.AndroidClockFactory
 import com.lyft.kronos.KronosClock
-import com.example.kronosclock.data.WatchDatabase
+import com.example.kronosanalogclock.data.WatchDatabase
 
 class KronosApp : Application() {
     lateinit var kronos: KronosClock
         private set
+
     val database: WatchDatabase by lazy { WatchDatabase.getInstance(this) }
 
     override fun onCreate() {

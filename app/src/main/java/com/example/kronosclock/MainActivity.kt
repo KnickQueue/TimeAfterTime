@@ -1,6 +1,6 @@
 @file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 
-package com.example.kronosclock
+package com.example.kronosanalogclock
 
 import android.Manifest
 import android.annotation.SuppressLint
@@ -20,7 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
-import com.example.kronosclock.ui.theme.KronosClockTheme
+import com.example.kronosanalogclock.ui.theme.KronosClockTheme
 import com.google.android.gms.location.LocationServices
 import com.lyft.kronos.KronosClock
 import kotlinx.coroutines.Dispatchers
@@ -170,7 +170,9 @@ private fun TimeZoneSelector(
     onZoneChange: (ZoneId) -> Unit,
     onDetect: () -> Unit
 ) {
+    // Full list of zone IDs from java.util for the dropdown
     val zones = remember { JavaTimeZone.getAvailableIDs().sorted() }
+
     var expanded by remember { mutableStateOf(false) }
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = !expanded }) {
@@ -207,12 +209,18 @@ private suspend fun detectTimeZone(context: Context): ZoneId? = withContext(Disp
             .addOnFailureListener { cont.resume(null) }
     }
     location ?: return@withContext null
+
     val geocoder = Geocoder(context, Locale.getDefault())
     val address = try {
         geocoder.getFromLocation(location.latitude, location.longitude, 1)?.firstOrNull()
     } catch (_: Exception) {
         null
     }
-    val ids = address?.countryCode?.let { IcuTimeZone.getAvailableIDs(it) }
+
+    // Use ICU for country-based timezone IDs (java.util lacks getAvailableIDs(String))
+    val ids = address?.countryCode?.let { country ->
+        IcuTimeZone.getAvailableIDs(country)
+    }
+
     return@withContext ids?.firstOrNull()?.let { ZoneId.of(it) }
 }
