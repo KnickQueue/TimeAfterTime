@@ -21,6 +21,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.example.kronosclock.ui.theme.KronosClockTheme
+import com.example.kronosclock.AnalogClock
+import com.example.kronosclock.TimeZoneSelector
 import com.google.android.gms.location.LocationServices
 import com.lyft.kronos.KronosClock
 import kotlinx.coroutines.Dispatchers
@@ -29,7 +31,6 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.suspendCancellableCoroutine
 import java.time.ZoneId
 import java.util.Locale
-import java.util.TimeZone as JavaTimeZone
 import android.os.Build
 import kotlin.coroutines.resume
 
@@ -161,40 +162,6 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun TimeZoneSelector(
-    zoneId: ZoneId,
-    onZoneChange: (ZoneId) -> Unit,
-    onDetect: () -> Unit
-) {
-    val zones = remember { JavaTimeZone.getAvailableIDs().sorted() }
-    var expanded by remember { mutableStateOf(false) }
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = !expanded }) {
-            OutlinedTextField(
-                readOnly = true,
-                value = zoneId.id,
-                onValueChange = {},
-                label = { Text("Timezone") },
-                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
-                modifier = Modifier.menuAnchor()
-            )
-            ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                zones.forEach { id ->
-                    DropdownMenuItem(
-                        text = { Text(id) },
-                        onClick = {
-                            onZoneChange(ZoneId.of(id))
-                            expanded = false
-                        }
-                    )
-                }
-            }
-        }
-        Button(onClick = onDetect) { Text("Detect via GPS") }
     }
 }
 
