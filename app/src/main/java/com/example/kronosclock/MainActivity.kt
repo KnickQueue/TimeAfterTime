@@ -1,11 +1,8 @@
 @file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 
-package com.example.kronosanalogclock
+package com.example.kronosclock
 
 import android.Manifest
-import android.annotation.SuppressLint
-import android.content.Context
-import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.Geocoder
 import android.os.Bundle
@@ -15,242 +12,160 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.AnalogClock
-import androidx.compose.material3.AssistChip
+import androidx.compose.foundation.layout.height
 import androidx.compose.material3.Button
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TimeZoneSelector
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
-import com.example.kronosanalogclock.ui.theme.KronosClockTheme
+import com.example.kronosclock.ui.theme.KronosClockTheme
 import com.google.android.gms.location.LocationServices
 import com.lyft.kronos.KronosClock
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import java.time.ZoneId
 import java.util.Locale
-import java.util.TimeZone as JavaTimeZone
-import android.icu.util.TimeZone as IcuTimeZone
-import kotlin.coroutines.resume
 
 class MainActivity : ComponentActivity() {
-    private val kronos: KronosClock by lazy { (application as KronosApp).kronos }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        val kronosClock: KronosClock =
+            (application as KronosApp).kronosClock
+
         setContent {
-            var darkTheme by remember { mutableStateOf(false) }
-            var dynamicColor by remember { mutableStateOf(true) }
-            var ambient by remember { mutableStateOf(false) }
-            var showNumerals by remember { mutableStateOf(true) }
-            var accentSlot by remember { mutableStateOf(0) }
-            var zoneId by remember { mutableStateOf(ZoneId.systemDefault()) }
-
-            val context = LocalContext.current
-            val scope = rememberCoroutineScope()
-            val permissionLauncher = rememberLauncherForActivityResult(
-                ActivityResultContracts.RequestPermission()
-            ) { granted ->
-                if (granted) {
-                    scope.launch { detectTimeZone(context)?.let { zoneId = it } }
-                }
-            }
-
-            KronosClockTheme(darkTheme = darkTheme, useDynamicColor = dynamicColor) {
-                Scaffold(
-                    topBar = {
-                        TopAppBar(
-                            title = { Text("Kronos Analog Clock") },
-                            scrollBehavior = androidx.compose.material3.TopAppBarDefaults.pinnedScrollBehavior(
-                                rememberTopAppBarState()
-                            ),
-                            actions = {
-                                Row(Modifier.padding(end = 8.dp)) {
-                                    AssistChip(
-                                        onClick = { darkTheme = !darkTheme },
-                                        label = { Text(if (darkTheme) "Dark" else "Light") }
-                                    )
-                                    Spacer(Modifier.width(8.dp))
-                                    AssistChip(
-                                        onClick = { dynamicColor = !dynamicColor },
-                                        label = { Text("Dynamic ${if (dynamicColor) "On" else "Off"}") }
-                                    )
-                                }
-                            }
-                        )
-                    }
-                ) { padding ->
-                    Column(
-                        Modifier
-                            .fillMaxSize()
-                            .padding(padding)
-                            .padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                            FilterChip(
-                                selected = ambient,
-                                onClick = { ambient = !ambient },
-                                label = { Text(if (ambient) "Ambient On" else "Ambient Off") }
-                            )
-                            FilterChip(
-                                selected = showNumerals,
-                                onClick = { showNumerals = !showNumerals },
-                                label = { Text(if (showNumerals) "Numerals On" else "Numerals Off") }
-                            )
-                            FilterChip(
-                                selected = accentSlot == 0,
-                                onClick = { accentSlot = 0 },
-                                label = { Text("Accent A") }
-                            )
-                            FilterChip(
-                                selected = accentSlot == 1,
-                                onClick = { accentSlot = 1 },
-                                label = { Text("Accent B") }
-                            )
-                            FilterChip(
-                                selected = accentSlot == 2,
-                                onClick = { accentSlot = 2 },
-                                label = { Text("Accent C") }
-                            )
-                        }
-
-                        // Kronos (NTP) backed time; falls back to system clock
-                        val timeSource: () -> Long = remember {
-                            { kronos.getCurrentTimeMs() ?: System.currentTimeMillis() }
-                        }
-
-                        val scheme = MaterialTheme.colorScheme
-                        val accent = when (accentSlot) {
-                            1 -> scheme.secondary
-                            2 -> scheme.tertiary
-                            else -> scheme.primary
-                        }
-
-                        TimeZoneSelector(
-                            zoneId = zoneId,
-                            onZoneChange = { zoneId = it },
-                            onDetect = {
-                                if (ContextCompat.checkSelfPermission(
-                                        context,
-                                        Manifest.permission.ACCESS_FINE_LOCATION
-                                    ) == PackageManager.PERMISSION_GRANTED
-                                ) {
-                                    scope.launch {
-                                        detectTimeZone(context)?.let { zoneId = it }
-                                    }
-                                } else {
-                                    permissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
-                                }
-                            }
-                        )
-
-                        AnalogClock(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .weight(1f),
-                            timeSourceMs = timeSource,
-                            zoneId = zoneId,
-                            showNumerals = showNumerals,
-                            ambientMode = ambient,
-                            accentColor = accent
-                        )
-
-                        Button(onClick = {
-                            context.startActivity(Intent(context, WatchCaptureActivity::class.java))
-                        }) {
-                            Text("Track Watch")
-                        }
-                    }
-                }
+            KronosClockTheme {
+                MainScreen(kronosClock = kronosClock)
             }
         }
     }
 }
 
 @Composable
-private fun TimeZoneSelector(
-    zoneId: ZoneId,
-    onZoneChange: (ZoneId) -> Unit,
-    onDetect: () -> Unit
-) {
-    // Full list of zone IDs from java.util for the dropdown
-    val zones = remember { JavaTimeZone.getAvailableIDs().sorted() }
-    var expanded by remember { mutableStateOf(false) }
+private fun MainScreen(kronosClock: KronosClock) {
+    val context = LocalContext.current
+    val fused = remember { LocationServices.getFusedLocationProviderClient(context) }
 
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = !expanded }) {
-            OutlinedTextField(
-                readOnly = true,
-                value = zoneId.id,
-                onValueChange = {},
-                label = { Text("Timezone") },
-                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
-                modifier = Modifier.menuAnchor()
+    var hasLocationPerm by remember { mutableStateOf(isLocationGranted(context)) }
+    var locality by remember { mutableStateOf<String?>(null) }
+    var country by remember { mutableStateOf<String?>(null) }
+    var zoneId by remember { mutableStateOf(ZoneId.systemDefault()) }
+    var kronosNow by remember { mutableStateOf(kronosClock.now()) }
+
+    val permLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { grants ->
+        hasLocationPerm = grants[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+                grants[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+    }
+
+    // Update Kronos time periodically (Kronos syncs in background from Application)
+    LaunchedEffect(Unit) {
+        kronosNow = kronosClock.now()
+    }
+
+    // Fetch location → locality/country + keep current ZoneId (system)
+    LaunchedEffect(hasLocationPerm) {
+        if (!hasLocationPerm) return@LaunchedEffect
+        val loc = try {
+            withContext(Dispatchers.IO) { fused.lastLocation.awaitOrNull() }
+        } catch (_: Exception) { null }
+
+        if (loc != null) {
+            // Best-effort reverse geocode for a friendly name
+            val geo = Geocoder(context, Locale.getDefault())
+            val addr = withContext(Dispatchers.IO) {
+                @Suppress("DEPRECATION")
+                geo.getFromLocation(loc.latitude, loc.longitude, 1)
+                    ?.firstOrNull()
+            }
+            locality = addr?.locality ?: addr?.subAdminArea ?: addr?.adminArea
+            country = addr?.countryName
+        }
+    }
+
+    Scaffold(
+        topBar = { TopAppBar(title = { Text("Kronos Clock") }) }
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            AnalogClock()
+
+            Spacer(Modifier.height(24.dp))
+
+            Text(
+                text = "Zone: ${zoneId.id}",
+                style = MaterialTheme.typography.bodyMedium
             )
-            androidx.compose.material3.ExposedDropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { expanded = false }
-            ) {
-                zones.forEach { id ->
-                    DropdownMenuItem(
-                        text = { Text(id) },
-                        onClick = {
-                            onZoneChange(ZoneId.of(id))
-                            expanded = false
-                        }
+            Text(
+                text = "Kronos: ${kronosNow?.toDate()?.toString() ?: "syncing…"}",
+                style = MaterialTheme.typography.bodyMedium
+            )
+
+            locality?.let { city ->
+                Text(
+                    text = buildString {
+                        append(city)
+                        country?.let { append(", $it") }
+                    },
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+
+            if (!hasLocationPerm) {
+                Spacer(Modifier.height(16.dp))
+                Button(onClick = {
+                    permLauncher.launch(
+                        arrayOf(
+                            Manifest.permission.ACCESS_FINE_LOCATION,
+                            Manifest.permission.ACCESS_COARSE_LOCATION
+                        )
                     )
+                }) {
+                    Text("Enable Location")
                 }
             }
         }
-        Button(onClick = onDetect) { Text("Detect via GPS") }
     }
 }
 
-@SuppressLint("MissingPermission")
-private suspend fun detectTimeZone(context: Context): ZoneId? = withContext(Dispatchers.IO) {
-    val client = LocationServices.getFusedLocationProviderClient(context)
-    val location = suspendCancellableCoroutine<android.location.Location?> { cont ->
-        client.lastLocation
-            .addOnSuccessListener { cont.resume(it) }
-            .addOnFailureListener { cont.resume(null) }
-    }
-    location ?: return@withContext null
+/* ---------- Helpers ---------- */
 
-    val geocoder = Geocoder(context, Locale.getDefault())
-    val address = try {
-        geocoder.getFromLocation(location.latitude, location.longitude, 1)?.firstOrNull()
-    } catch (_: Exception) {
-        null
-    }
+private fun isLocationGranted(context: android.content.Context): Boolean {
+    val fine = ContextCompat.checkSelfPermission(
+        context, Manifest.permission.ACCESS_FINE_LOCATION
+    ) == PackageManager.PERMISSION_GRANTED
+    val coarse = ContextCompat.checkSelfPermission(
+        context, Manifest.permission.ACCESS_COARSE_LOCATION
+    ) == PackageManager.PERMISSION_GRANTED
+    return fine || coarse
+}
 
-    // Use ICU for country-based timezone IDs (java.util lacks getAvailableIDs(country))
-    val ids = address?.countryCode?.let { country ->
-        IcuTimeZone.getAvailableIDs(country)
-    }
-
-    return@withContext ids?.firstOrNull()?.let { ZoneId.of(it) }
+// Lightweight suspend wrapper for FusedLocationProviderClient.lastLocation
+private suspend fun com.google.android.gms.location.FusedLocationProviderClient.awaitOrNull()
+        : android.location.Location? = withContext(Dispatchers.IO) {
+    try {
+        val task = lastLocation
+        kotlinx.coroutines.suspendCancellableCoroutine<android.location.Location?> { cont ->
+            task.addOnSuccessListener { cont.resume(it, onCancellation = null) }
+            task.addOnFailureListener { cont.resume(null, onCancellation = null) }
+        }
+    } catch (_: Exception) { null }
 }

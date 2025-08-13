@@ -1,4 +1,4 @@
-package com.example.kronosanalogclock
+package com.example.kronosclock
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -7,27 +7,19 @@ import androidx.camera.core.CameraSelector
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Button
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
-import com.example.kronosanalogclock.data.Watch
-import com.google.common.util.concurrent.ListenableFuture
+import com.example.kronosclock.data.Watch
 import kotlinx.coroutines.launch
+import com.google.common.util.concurrent.ListenableFuture
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 
@@ -39,7 +31,6 @@ class WatchCaptureActivity : ComponentActivity() {
             val app = context.applicationContext as KronosApp
             val db = app.database
             val scope = rememberCoroutineScope()
-
             var make by remember { mutableStateOf("") }
             var model by remember { mutableStateOf("") }
             val previewView = remember { PreviewView(context) }
@@ -50,43 +41,23 @@ class WatchCaptureActivity : ComponentActivity() {
                     it.setSurfaceProvider(previewView.surfaceProvider)
                 }
                 cameraProvider.unbindAll()
-                cameraProvider.bindToLifecycle(
-                    this@WatchCaptureActivity,
-                    CameraSelector.DEFAULT_BACK_CAMERA,
-                    preview
-                )
+                cameraProvider.bindToLifecycle(this@WatchCaptureActivity, CameraSelector.DEFAULT_BACK_CAMERA, preview)
             }
 
             Column(
-                modifier = Modifier
+                Modifier
                     .fillMaxSize()
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 AndroidView({ previewView }, modifier = Modifier.weight(1f))
-
-                OutlinedTextField(
-                    value = make,
-                    onValueChange = { make = it },
-                    label = { Text("Make") }
-                )
-                OutlinedTextField(
-                    value = model,
-                    onValueChange = { model = it },
-                    label = { Text("Model") }
-                )
-
+                OutlinedTextField(value = make, onValueChange = { make = it }, label = { Text("Make") })
+                OutlinedTextField(value = model, onValueChange = { model = it }, label = { Text("Model") })
                 Button(
                     onClick = {
                         scope.launch {
-                            db.watchDao().insert(
-                                Watch(
-                                    make = make,
-                                    model = model,
-                                    lastSyncedEpochMs = System.currentTimeMillis()
-                                )
-                            )
-                            this@WatchCaptureActivity.finish()
+                            db.watchDao().insert(Watch(make = make, model = model, lastSyncedEpochMs = System.currentTimeMillis()))
+                            finish()
                         }
                     },
                     enabled = make.isNotBlank() && model.isNotBlank()

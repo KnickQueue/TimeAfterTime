@@ -1,22 +1,20 @@
-package com.example.kronosanalogclock
+package com.example.kronosclock
 
 import android.app.Application
 import com.lyft.kronos.AndroidClockFactory
 import com.lyft.kronos.KronosClock
-import com.example.kronosanalogclock.data.WatchDatabase
+import com.example.kronosclock.data.WatchDatabase
 
 class KronosApp : Application() {
-    lateinit var kronos: KronosClock
-        private set
-
+    lateinit var kronosClock: KronosClock
     val database: WatchDatabase by lazy { WatchDatabase.getInstance(this) }
 
     override fun onCreate() {
         super.onCreate()
-        kronos = AndroidClockFactory.createKronosClock(
+        kronosClock = AndroidClockFactory.createKronosClock(
             this,
             ntpHosts = listOf("time.android.com")
         )
-        kronos.syncInBackground()
+        kronosClock.syncInBackground()
     }
 }
