@@ -108,10 +108,23 @@ private fun KronosClockApp() {
             Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Text("Kronos Clock", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-            Spacer(Modifier.height(12.dp))
+
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Button(onClick = { showWatches = true }) { Text("Manage Watches") }
+                Button(onClick = {
+                    kronos.sync(); isSynced = true; lastSyncStatus = "Manual sync triggered"
+                }) { Text("Sync Now") }
+                Button(onClick = {
+                    fetchCityAndZone(context, fusedClient) { c, z ->
+                        city = c
+                        zoneId = z ?: ZoneId.systemDefault()
+                    }
+                }) { Text("Refresh Location") }
+            }
 
             ElevatedCard(Modifier.padding(end = 8.dp)) {
                 Column(Modifier.padding(16.dp)) {
@@ -126,34 +139,13 @@ private fun KronosClockApp() {
                 }
             }
 
-            Spacer(Modifier.height(16.dp))
-
             Card {
                 Column(Modifier.padding(16.dp)) {
                     Text("NTP Status", fontWeight = FontWeight.SemiBold)
                     Text(if (isSynced) "Sync in progress / using Kronos time when available" else "Not synced yet")
                     lastSyncStatus?.let { Text(it) }
-                    Spacer(Modifier.height(8.dp))
-                    Row {
-                        Button(onClick = {
-                            kronos.sync(); isSynced = true; lastSyncStatus = "Manual sync triggered"
-                        }) { Text("Sync Now") }
-
-                        Spacer(Modifier.width(12.dp))
-
-                        Button(onClick = {
-                            fetchCityAndZone(context, fusedClient) { c, z ->
-                                city = c
-                                zoneId = z ?: ZoneId.systemDefault()
-                            }
-                        }) { Text("Refresh Location") }
-                    }
                 }
             }
-
-            Spacer(Modifier.height(16.dp))
-
-            Button(onClick = { showWatches = true }) { Text("Manage Watches") }
         }
     }
 }
