@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import java.time.Instant
@@ -32,7 +33,7 @@ fun AnalogClock(
     ambientMode: Boolean,
     accentColor: Color = MaterialTheme.colorScheme.primary
 ) {
-    // Tick: 60fps in active, 1s in ambient
+    // Smooth in active, 1s-ticks in ambient
     val tickMs = if (ambientMode) 1000L else 16L
 
     val nowMs by produceState(initialValue = timeSourceMs(), key1 = zoneId, key2 = ambientMode) {
@@ -47,7 +48,6 @@ fun AnalogClock(
     val minutes = zoned.minute + seconds / 60.0
     val hours = (zoned.hour % 12) + minutes / 60.0
 
-    // Angles in radians (0 at 3 o’clock, so subtract PI/2 when drawing)
     val secondAngle = (seconds / 60.0) * (2.0 * Math.PI)
     val minuteAngle = (minutes / 60.0) * (2.0 * Math.PI)
     val hourAngle = (hours / 12.0) * (2.0 * Math.PI)
@@ -59,10 +59,11 @@ fun AnalogClock(
     val hourMinuteColor = scheme.onSurface
     val secondColor = accentColor
 
-    val hourStroke = 6.dp.value
-    val minuteStroke = 4.dp.value
-    val secondStroke = 2.dp.value
-    val ringStroke = 2.dp.value
+    val density = LocalDensity.current
+    val hourStroke = with(density) { 6.dp.toPx() }
+    val minuteStroke = with(density) { 4.dp.toPx() }
+    val secondStroke = with(density) { 2.dp.toPx() }
+    val ringStroke = with(density) { 2.dp.toPx() }
 
     Canvas(
         modifier = modifier
@@ -156,7 +157,7 @@ fun AnalogClock(
                 strokeWidth = secondStroke,
                 cap = StrokeCap.Round
             )
-            // Tail
+            // Tail for balance
             drawLine(
                 color = secondColor.copy(alpha = 0.7f),
                 start = c,
@@ -170,7 +171,7 @@ fun AnalogClock(
             )
         }
 
-        // Hub
+        // Center hub
         drawCircle(color = hourMinuteColor, radius = hourStroke * 0.9f, center = c)
         if (!ambientMode) drawCircle(color = secondColor, radius = secondStroke * 2.2f, center = c)
     }

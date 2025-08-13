@@ -13,9 +13,32 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.AnalogClock
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.Button
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TimeZoneSelector
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberTopAppBarState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -51,7 +74,9 @@ class MainActivity : ComponentActivity() {
             val permissionLauncher = rememberLauncherForActivityResult(
                 ActivityResultContracts.RequestPermission()
             ) { granted ->
-                if (granted) scope.launch { detectTimeZone(context)?.let { zoneId = it } }
+                if (granted) {
+                    scope.launch { detectTimeZone(context)?.let { zoneId = it } }
+                }
             }
 
             KronosClockTheme(darkTheme = darkTheme, useDynamicColor = dynamicColor) {
@@ -59,6 +84,9 @@ class MainActivity : ComponentActivity() {
                     topBar = {
                         TopAppBar(
                             title = { Text("Kronos Analog Clock") },
+                            scrollBehavior = androidx.compose.material3.TopAppBarDefaults.pinnedScrollBehavior(
+                                rememberTopAppBarState()
+                            ),
                             actions = {
                                 Row(Modifier.padding(end = 8.dp)) {
                                     AssistChip(
@@ -110,6 +138,7 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
+                        // Kronos (NTP) backed time; falls back to system clock
                         val timeSource: () -> Long = remember {
                             { kronos.getCurrentTimeMs() ?: System.currentTimeMillis() }
                         }
@@ -130,7 +159,9 @@ class MainActivity : ComponentActivity() {
                                         Manifest.permission.ACCESS_FINE_LOCATION
                                     ) == PackageManager.PERMISSION_GRANTED
                                 ) {
-                                    scope.launch { detectTimeZone(context)?.let { zoneId = it } }
+                                    scope.launch {
+                                        detectTimeZone(context)?.let { zoneId = it }
+                                    }
                                 } else {
                                     permissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
                                 }
@@ -166,6 +197,7 @@ private fun TimeZoneSelector(
     onZoneChange: (ZoneId) -> Unit,
     onDetect: () -> Unit
 ) {
+    // Full list of zone IDs from java.util for the dropdown
     val zones = remember { JavaTimeZone.getAvailableIDs().sorted() }
     var expanded by remember { mutableStateOf(false) }
 
@@ -179,7 +211,10 @@ private fun TimeZoneSelector(
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
                 modifier = Modifier.menuAnchor()
             )
-            ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            androidx.compose.material3.ExposedDropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false }
+            ) {
                 zones.forEach { id ->
                     DropdownMenuItem(
                         text = { Text(id) },
@@ -212,6 +247,7 @@ private suspend fun detectTimeZone(context: Context): ZoneId? = withContext(Disp
         null
     }
 
+    // Use ICU for country-based timezone IDs (java.util lacks getAvailableIDs(country))
     val ids = address?.countryCode?.let { country ->
         IcuTimeZone.getAvailableIDs(country)
     }
