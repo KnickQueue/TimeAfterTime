@@ -30,7 +30,7 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import java.time.ZoneId
 import java.util.Locale
 import java.util.TimeZone as JavaTimeZone
-import android.icu.util.TimeZone as IcuTimeZone
+import android.os.Build
 import kotlin.coroutines.resume
 
 class MainActivity : ComponentActivity() {
@@ -213,6 +213,10 @@ private suspend fun detectTimeZone(context: Context): ZoneId? = withContext(Disp
     } catch (_: Exception) {
         null
     }
-    val ids = address?.countryCode?.let { IcuTimeZone.getAvailableIDs(it) }
-    return@withContext ids?.firstOrNull()?.let { ZoneId.of(it) }
+    val tz = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        address?.timeZone
+    } else {
+        null
+    }
+    return@withContext tz?.toZoneId()
 }
