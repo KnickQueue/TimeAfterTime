@@ -4,6 +4,7 @@ package com.example.kronosclock
 
 import android.Manifest
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.Geocoder
 import android.os.Bundle
@@ -20,6 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.example.kronosclock.ui.theme.KronosClockTheme
+import com.example.kronosclock.data.WatchDatabase
 import com.google.android.gms.location.LocationServices
 import com.lyft.kronos.KronosClock
 import kotlinx.coroutines.delay
@@ -40,6 +42,8 @@ private fun KronosClockApp() {
     val context = LocalContext.current
     val fusedClient = remember { LocationServices.getFusedLocationProviderClient(context) }
     val kronos: KronosClock = remember { KronosApp.kronosClock }
+    val watchDao = remember { WatchDatabase.getInstance(context).watchDao() }
+    var showWatches by remember { mutableStateOf(false) }
 
     var city by remember { mutableStateOf<String?>(null) }
     var zoneId by remember { mutableStateOf(ZoneId.systemDefault()) }
@@ -89,46 +93,60 @@ private fun KronosClockApp() {
     val dateFmt = remember { DateTimeFormatter.ofPattern("EEE, MMM d uuuu").withLocale(Locale.getDefault()) }
     val timeFmt = remember { DateTimeFormatter.ofPattern("hh:mm:ss a").withLocale(Locale.getDefault()) }
 
-    Column(Modifier.fillMaxSize().padding(16.dp)) {
-        Text("Kronos Clock", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-        Spacer(Modifier.height(12.dp))
+    if (showWatches) {
+        WatchListScreen(
+            watchDao = watchDao,
+            onCapture = {
+                context.startActivity(Intent(context, WatchCaptureActivity::class.java))
+            },
+            onBack = { showWatches = false }
+        )
+    } else {
+        Column(Modifier.fillMaxSize().padding(16.dp)) {
+            Text("Kronos Clock", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(12.dp))
 
-        ElevatedCard(Modifier.padding(end = 8.dp)) {
-            Column(Modifier.padding(16.dp)) {
-                Text("Date", fontWeight = FontWeight.SemiBold)
-                Text(dateFmt.withZone(zoneId).format(ntpNow))
-                Spacer(Modifier.height(12.dp))
-                Text("Time", fontWeight = FontWeight.SemiBold)
-                Text(timeFmt.withZone(zoneId).format(ntpNow), style = MaterialTheme.typography.displaySmall)
-                Spacer(Modifier.height(12.dp))
-                Row { Text("Zone: ", fontWeight = FontWeight.SemiBold); Text(zoneId.id) }
-                city?.let { Row { Text("City: ", fontWeight = FontWeight.SemiBold); Text(it) } }
-            }
-        }
-
-        Spacer(Modifier.height(16.dp))
-
-        Card {
-            Column(Modifier.padding(16.dp)) {
-                Text("NTP Status", fontWeight = FontWeight.SemiBold)
-                Text(if (isSynced) "Sync in progress / using Kronos time when available" else "Not synced yet")
-                lastSyncStatus?.let { Text(it) }
-                Spacer(Modifier.height(8.dp))
-                Row {
-                    Button(onClick = {
-                        kronos.sync(); isSynced = true; lastSyncStatus = "Manual sync triggered"
-                    }) { Text("Sync Now") }
-
-                    Spacer(Modifier.width(12.dp))
-
-                    Button(onClick = {
-                        fetchCityAndZone(context, fusedClient) { c, z ->
-                            city = c
-                            zoneId = z ?: ZoneId.systemDefault()
-                        }
-                    }) { Text("Refresh Location") }
+            ElevatedCard(Modifier.padding(end = 8.dp)) {
+                Column(Modifier.padding(16.dp)) {
+                    Text("Date", fontWeight = FontWeight.SemiBold)
+                    Text(dateFmt.withZone(zoneId).format(ntpNow))
+                    Spacer(Modifier.height(12.dp))
+                    Text("Time", fontWeight = FontWeight.SemiBold)
+                    Text(timeFmt.withZone(zoneId).format(ntpNow), style = MaterialTheme.typography.displaySmall)
+                    Spacer(Modifier.height(12.dp))
+                    Row { Text("Zone: ", fontWeight = FontWeight.SemiBold); Text(zoneId.id) }
+                    city?.let { Row { Text("City: ", fontWeight = FontWeight.SemiBold); Text(it) } }
                 }
             }
+
+            Spacer(Modifier.height(16.dp))
+
+            Card {
+                Column(Modifier.padding(16.dp)) {
+                    Text("NTP Status", fontWeight = FontWeight.SemiBold)
+                    Text(if (isSynced) "Sync in progress / using Kronos time when available" else "Not synced yet")
+                    lastSyncStatus?.let { Text(it) }
+                    Spacer(Modifier.height(8.dp))
+                    Row {
+                        Button(onClick = {
+                            kronos.sync(); isSynced = true; lastSyncStatus = "Manual sync triggered"
+                        }) { Text("Sync Now") }
+
+                        Spacer(Modifier.width(12.dp))
+
+                        Button(onClick = {
+                            fetchCityAndZone(context, fusedClient) { c, z ->
+                                city = c
+                                zoneId = z ?: ZoneId.systemDefault()
+                            }
+                        }) { Text("Refresh Location") }
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(16.dp))
+
+            Button(onClick = { showWatches = true }) { Text("Manage Watches") }
         }
     }
 }
