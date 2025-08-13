@@ -57,7 +57,7 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
-            KronosClockTheme(darkTheme = darkTheme, useDynamicColor = dynamicColor) {
+            KronosClockTheme(darkTheme = darkTheme, dynamicColor = dynamicColor) {
                 Scaffold(
                     topBar = {
                         TopAppBar(

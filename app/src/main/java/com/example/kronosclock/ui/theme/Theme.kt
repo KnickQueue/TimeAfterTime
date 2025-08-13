@@ -40,12 +40,12 @@ private val DarkColors = darkColorScheme(
 @Composable
 fun KronosClockTheme(
     darkTheme: Boolean,
-    useDynamicColor: Boolean,
+    dynamicColor: Boolean,
     content: @Composable () -> Unit
 ) {
     val context = LocalContext.current
     val colors = when {
-        useDynamicColor && Build.VERSION.SDK_INT >= 31 -> {
+        dynamicColor && Build.VERSION.SDK_INT >= 31 -> {
             if (darkTheme) dynamicDarkColorScheme(context)
             else dynamicLightColorScheme(context)
         }
