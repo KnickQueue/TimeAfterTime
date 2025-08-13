@@ -170,7 +170,9 @@ private fun TimeZoneSelector(
     onZoneChange: (ZoneId) -> Unit,
     onDetect: () -> Unit
 ) {
+    // Full list of zone IDs from java.util for the dropdown
     val zones = remember { JavaTimeZone.getAvailableIDs().sorted() }
+
     var expanded by remember { mutableStateOf(false) }
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = !expanded }) {
@@ -207,12 +209,18 @@ private suspend fun detectTimeZone(context: Context): ZoneId? = withContext(Disp
             .addOnFailureListener { cont.resume(null) }
     }
     location ?: return@withContext null
+
     val geocoder = Geocoder(context, Locale.getDefault())
     val address = try {
         geocoder.getFromLocation(location.latitude, location.longitude, 1)?.firstOrNull()
     } catch (_: Exception) {
         null
     }
-    val ids = address?.countryCode?.let { IcuTimeZone.getAvailableIDs(country = it) }
+
+    // Use ICU for country-based timezone IDs (java.util lacks getAvailableIDs(String))
+    val ids = address?.countryCode?.let { country ->
+        IcuTimeZone.getAvailableIDs(country)
+    }
+
     return@withContext ids?.firstOrNull()?.let { ZoneId.of(it) }
 }

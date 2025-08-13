@@ -9,12 +9,12 @@ android {
     compileSdk = 34
 
     defaultConfig {
-    applicationId = "com.example.kronosanalogclock"
-    minSdk = 26   // <- was 24
-    targetSdk = 34
-    versionCode = 1
-    versionName = "1.0"
-}
+        applicationId = "com.example.kronosanalogclock"
+        minSdk = 26
+        targetSdk = 34
+        versionCode = 1
+        versionName = "1.0"
+    }
 
     buildTypes {
         release {
@@ -50,8 +50,9 @@ dependencies {
         exclude(group = "androidx.activity", module = "activity-compose")
     }
     debugImplementation("androidx.compose.ui:ui-tooling")
-    implementation("com.lyft.kronos:kronos-android:0.0.1-alpha11")
     implementation("androidx.compose.ui:ui-graphics")
+
+    implementation("com.lyft.kronos:kronos-android:0.0.1-alpha11")
     implementation("com.google.android.gms:play-services-location:21.0.1")
 
     // CameraX for watch face capture
@@ -67,4 +68,3 @@ dependencies {
     implementation("androidx.room:room-ktx:$roomVersion")
     kapt("androidx.room:room-compiler:$roomVersion")
 }
-
