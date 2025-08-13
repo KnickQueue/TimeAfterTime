@@ -1,4 +1,4 @@
-package com.example.kronosanalogclock.data
+package com.example.kronosclock.data
 
 import androidx.room.Dao
 import androidx.room.Insert

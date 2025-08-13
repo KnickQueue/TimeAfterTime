@@ -1,4 +1,4 @@
-package com.example.kronosanalogclock.data
+package com.example.kronosclock.data
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey

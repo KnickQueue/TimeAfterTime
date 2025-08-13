@@ -51,9 +51,7 @@ class MainActivity : ComponentActivity() {
             val permissionLauncher = rememberLauncherForActivityResult(
                 ActivityResultContracts.RequestPermission()
             ) { granted ->
-                if (granted) {
-                    scope.launch { detectTimeZone(context)?.let { zoneId = it } }
-                }
+                if (granted) scope.launch { detectTimeZone(context)?.let { zoneId = it } }
             }
 
             KronosClockTheme(darkTheme = darkTheme, useDynamicColor = dynamicColor) {
@@ -132,9 +130,7 @@ class MainActivity : ComponentActivity() {
                                         Manifest.permission.ACCESS_FINE_LOCATION
                                     ) == PackageManager.PERMISSION_GRANTED
                                 ) {
-                                    scope.launch {
-                                        detectTimeZone(context)?.let { zoneId = it }
-                                    }
+                                    scope.launch { detectTimeZone(context)?.let { zoneId = it } }
                                 } else {
                                     permissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
                                 }
@@ -170,10 +166,9 @@ private fun TimeZoneSelector(
     onZoneChange: (ZoneId) -> Unit,
     onDetect: () -> Unit
 ) {
-    // Full list of zone IDs from java.util for the dropdown
     val zones = remember { JavaTimeZone.getAvailableIDs().sorted() }
-
     var expanded by remember { mutableStateOf(false) }
+
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = !expanded }) {
             OutlinedTextField(
@@ -217,7 +212,6 @@ private suspend fun detectTimeZone(context: Context): ZoneId? = withContext(Disp
         null
     }
 
-    // Use ICU for country-based timezone IDs (java.util lacks getAvailableIDs(String))
     val ids = address?.countryCode?.let { country ->
         IcuTimeZone.getAvailableIDs(country)
     }

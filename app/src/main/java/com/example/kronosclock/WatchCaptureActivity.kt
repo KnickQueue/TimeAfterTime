@@ -57,8 +57,18 @@ class WatchCaptureActivity : ComponentActivity() {
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 AndroidView({ previewView }, modifier = Modifier.weight(1f))
-                OutlinedTextField(value = make, onValueChange = { make = it }, label = { Text("Make") })
-                OutlinedTextField(value = model, onValueChange = { model = it }, label = { Text("Model") })
+
+                OutlinedTextField(
+                    value = make,
+                    onValueChange = { make = it },
+                    label = { Text("Make") }
+                )
+                OutlinedTextField(
+                    value = model,
+                    onValueChange = { model = it },
+                    label = { Text("Model") }
+                )
+
                 Button(
                     onClick = {
                         scope.launch {
