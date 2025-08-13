@@ -8,6 +8,7 @@ import com.example.kronosanalogclock.data.WatchDatabase
 class KronosApp : Application() {
     lateinit var kronos: KronosClock
         private set
+
     val database: WatchDatabase by lazy { WatchDatabase.getInstance(this) }
 
     override fun onCreate() {

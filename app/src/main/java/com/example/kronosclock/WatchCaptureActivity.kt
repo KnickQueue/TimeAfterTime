@@ -12,14 +12,15 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import com.example.kronosanalogclock.data.Watch
-import kotlinx.coroutines.launch
 import com.google.common.util.concurrent.ListenableFuture
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 
@@ -41,7 +42,11 @@ class WatchCaptureActivity : ComponentActivity() {
                     it.setSurfaceProvider(previewView.surfaceProvider)
                 }
                 cameraProvider.unbindAll()
-                cameraProvider.bindToLifecycle(this@WatchCaptureActivity, CameraSelector.DEFAULT_BACK_CAMERA, preview)
+                cameraProvider.bindToLifecycle(
+                    this@WatchCaptureActivity,
+                    CameraSelector.DEFAULT_BACK_CAMERA,
+                    preview
+                )
             }
 
             Column(
@@ -56,8 +61,14 @@ class WatchCaptureActivity : ComponentActivity() {
                 Button(
                     onClick = {
                         scope.launch {
-                            db.watchDao().insert(Watch(make = make, model = model, lastSyncedEpochMs = System.currentTimeMillis()))
-                            finish()
+                            db.watchDao().insert(
+                                Watch(
+                                    make = make,
+                                    model = model,
+                                    lastSyncedEpochMs = System.currentTimeMillis()
+                                )
+                            )
+                            this@WatchCaptureActivity.finish()
                         }
                     },
                     enabled = make.isNotBlank() && model.isNotBlank()

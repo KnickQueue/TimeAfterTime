@@ -1,5 +1,4 @@
-// FILE 9: app/src/main/java/com/example/kronosanalogclock/AnalogClock.kt
-package com.example.kronosanalogclock
+package com.example.kronosclock
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.runtime.*

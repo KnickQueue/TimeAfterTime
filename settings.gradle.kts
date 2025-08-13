@@ -19,5 +19,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "KronosAnalogClock"
+rootProject.name = "KronosClock"
 include(":app")
