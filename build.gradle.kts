@@ -1,4 +1,3 @@
-// app/build.gradle.kts
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -11,7 +10,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.kronosclock"
-        minSdk = 26 // was 24
+        minSdk = 26
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
@@ -50,11 +49,15 @@ dependencies {
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
-    debugImplementation("androidx.compose.ui:ui-tooling")
     implementation("androidx.compose.ui:ui-graphics")
+    debugImplementation("androidx.compose.ui:ui-tooling")
 
-    // Kronos NTP clock
-    implementation("com.lyft.kronos:kronos-android:0.8.0.1-alpha11")
+    // Compose Activity & Lifecycle
+    implementation("androidx.activity:activity-compose:1.9.2")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.4")
+
+    // Kronos NTP clock (published version)
+    implementation("com.lyft.kronos:kronos-android:0.0.1-alpha11")
 
     // Location services
     implementation("com.google.android.gms:play-services-location:21.0.1")
