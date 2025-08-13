@@ -47,7 +47,11 @@ dependencies {
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
     debugImplementation("androidx.compose.ui:ui-tooling")
-    implementation("com.lyft.kronos:kronos-android:0.0.1-alpha11")
+
+    // NTP time sync via Kronos
+    val kronosVersion = "0.0.1-alpha11"
+    implementation("com.lyft.kronos:kronos-android:$kronosVersion")
+
     implementation("androidx.compose.ui:ui-graphics")
     implementation("com.google.android.gms:play-services-location:21.0.1")
 
