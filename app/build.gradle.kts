@@ -1,6 +1,7 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+    id("org.jetbrains.kotlin.kapt")
 }
 
 android {
@@ -48,5 +49,19 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-tooling")
     implementation("com.lyft.kronos:kronos-android:0.0.1-alpha11")
     implementation("androidx.compose.ui:ui-graphics")
+    implementation("com.google.android.gms:play-services-location:21.0.1")
+
+    // CameraX for watch face capture
+    val cameraXVersion = "1.3.4"
+    implementation("androidx.camera:camera-core:$cameraXVersion")
+    implementation("androidx.camera:camera-camera2:$cameraXVersion")
+    implementation("androidx.camera:camera-lifecycle:$cameraXVersion")
+    implementation("androidx.camera:camera-view:1.3.0")
+
+    // Room database for tracking watches
+    val roomVersion = "2.6.1"
+    implementation("androidx.room:room-runtime:$roomVersion")
+    implementation("androidx.room:room-ktx:$roomVersion")
+    kapt("androidx.room:room-compiler:$roomVersion")
 }
 
