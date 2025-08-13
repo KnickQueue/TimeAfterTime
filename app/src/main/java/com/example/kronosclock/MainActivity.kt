@@ -25,8 +25,8 @@ import com.google.android.gms.location.LocationServices
 import com.lyft.kronos.KronosClock
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
 import java.time.ZoneId
 import java.util.Locale
 import java.util.TimeZone as JavaTimeZone

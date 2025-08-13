@@ -1,20 +1,26 @@
-package com.example.kronosclock
+package com.example.kronosanalogclock
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
-import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
-import kotlin.math.*
 import java.time.Instant
 import java.time.ZoneId
+import kotlin.math.cos
+import kotlin.math.min
+import kotlin.math.sin
 
 @Composable
 fun AnalogClock(
@@ -23,120 +29,159 @@ fun AnalogClock(
     zoneId: ZoneId,
     showNumerals: Boolean,
     ambientMode: Boolean,
-    accentColor: Color
+    accentColor: Color = MaterialTheme.colorScheme.primary
 ) {
-    val nowMs = remember { mutableLongStateOf(timeSourceMs()) }
+    // Tick rate: in ambient we only step once per second, otherwise ~60 FPS
+    val tickMs = if (ambientMode) 1000L else 16L
 
-    LaunchedEffect(ambientMode) {
+    // Drive the clock
+    val nowMs by produceState(initialValue = timeSourceMs(), key1 = zoneId, key2 = ambientMode) {
         while (true) {
-            if (ambientMode) {
-                val ms = timeSourceMs()
-                val untilNextMinute = 60_000L - (ms % 60_000L)
-                nowMs.longValue = ms
-                delay(untilNextMinute.coerceIn(500L, 60_000L))
-            } else {
-                withFrameNanos { nowMs.longValue = timeSourceMs() }
-            }
+            value = timeSourceMs()
+            delay(tickMs)
         }
     }
 
-    Canvas(modifier = modifier) {
-        val w = size.width
-        val h = size.height
-        val cx = w / 2f
-        val cy = h / 2f
-        val radius = min(cx, cy) * 0.92f
+    val instant = remember(nowMs, zoneId) { Instant.ofEpochMilli(nowMs).atZone(zoneId) }
+    val seconds = instant.second + instant.nano / 1_000_000_000.0
+    val minutes = instant.minute + seconds / 60.0
+    val hours = (instant.hour % 12) + minutes / 60.0
 
-        val onBg = if (ambientMode) Color.Gray.copy(alpha = 0.75f) else Color.Black.copy(alpha = 0.85f)
-        val faceStroke = if (ambientMode) onBg else onBg.copy(alpha = 0.9f)
-        val tickColor = if (ambientMode) onBg.copy(alpha = 0.6f) else onBg
-        val hourMinColor = onBg
-        val secondColor = if (ambientMode) Color.Transparent else accentColor
+    val minuteAngle = (minutes / 60.0) * 2.0 * Math.PI
+    val hourAngle = (hours / 12.0) * 2.0 * Math.PI
+    val secondAngle = (seconds / 60.0) * 2.0 * Math.PI
 
-        drawCircle(style = Stroke(width = radius * 0.02f), color = faceStroke)
+    val scheme = MaterialTheme.colorScheme
+    val faceColor = scheme.surface
+    val tickColor = scheme.onSurface.copy(alpha = 0.8f)
+    val numeralColor = scheme.onSurface
+    val hourMinuteColor = scheme.onSurface
+    val secondColor = accentColor
 
-        for (i in 0 until 60) {
-            val a = angleFor(i.toFloat(), 60f)
-            val outer = pointOnCircle(cx, cy, radius, a)
-            val inner = pointOnCircle(cx, cy, radius * if (i % 5 == 0) 0.86f else 0.93f, a)
+    val density = LocalDensity.current
+    val hourStroke = with(density) { 6.dp.toPx() }
+    val minuteStroke = with(density) { 4.dp.toPx() }
+    val secondStroke = with(density) { 2.dp.toPx() }
+    val ringStroke = with(density) { 2.dp.toPx() }
+
+    Canvas(
+        modifier = modifier
+            .fillMaxWidth()
+            .aspectRatio(1f)
+    ) {
+        val radius = min(size.width, size.height) / 2f
+        val center = Offset(size.width / 2f, size.height / 2f)
+
+        // Face ring
+        drawCircle(
+            color = faceColor,
+            radius = radius,
+            center = center
+        )
+        drawCircle(
+            color = tickColor.copy(alpha = 0.35f),
+            radius = radius - ringStroke / 2f,
+            center = center,
+            style = Stroke(width = ringStroke)
+        )
+
+        // Minute/Hour ticks
+        repeat(60) { i ->
+            val angle = Math.toRadians(i * 6.0 - 90.0)
+            val isHour = i % 5 == 0
+            val inner = if (isHour) radius * 0.82f else radius * 0.88f
+            val outer = radius * 0.96f
+            val stroke = if (isHour) 3.5f else 1.8f
+            val sx = (center.x + inner * cos(angle)).toFloat()
+            val sy = (center.y + inner * sin(angle)).toFloat()
+            val ex = (center.x + outer * cos(angle)).toFloat()
+            val ey = (center.y + outer * sin(angle)).toFloat()
             drawLine(
-                start = inner, end = outer,
                 color = tickColor,
-                strokeWidth = radius * if (i % 5 == 0) 0.02f else 0.008f
-            )
-        }
-
-        if (showNumerals) drawNumerals(cx, cy, radius * 0.74f, onBg)
-
-        val ms = nowMs.longValue
-        val zoned = Instant.ofEpochMilli(ms).atZone(zoneId)
-        val seconds = zoned.second.toFloat() + zoned.nano / 1_000_000_000f
-        val minutes = zoned.minute.toFloat() + seconds / 60f
-        val hours = (zoned.hour % 12).toFloat() + minutes / 60f
-
-        val hourLen = radius * 0.55f
-        val minLen  = radius * 0.75f
-        val secLen  = radius * 0.85f
-
-        drawLine(
-            start = Offset(cx, cy),
-            end = pointOnCircle(cx, cy, hourLen, angleFor(hours, 12f)),
-            color = hourMinColor,
-            strokeWidth = radius * 0.04f,
-            cap = StrokeCap.Round
-        )
-        drawLine(
-            start = Offset(cx, cy),
-            end = pointOnCircle(cx, cy, minLen, angleFor(minutes, 60f)),
-            color = hourMinColor,
-            strokeWidth = radius * 0.03f,
-            cap = StrokeCap.Round
-        )
-
-        if (secondColor.alpha > 0f) {
-            val sAngle = angleFor(seconds, 60f)
-            val tip = pointOnCircle(cx, cy, secLen, sAngle)
-            val tail = pointOnCircle(cx, cy, radius * 0.22f, sAngle + PI.toFloat())
-            drawLine(
-                start = tail, end = tip,
-                color = secondColor,
-                strokeWidth = radius * 0.012f,
+                start = Offset(sx, sy),
+                end = Offset(ex, ey),
+                strokeWidth = stroke,
                 cap = StrokeCap.Round
             )
-            drawCircle(color = secondColor, radius = radius * 0.028f, center = tail)
-            drawCircle(color = secondColor, radius = radius * 0.010f, center = tip)
         }
 
-        drawCircle(color = hourMinColor, radius = radius * 0.035f, center = Offset(cx, cy))
-        drawCircle(color = accentColor.copy(alpha = if (ambientMode) 0.3f else 0.9f),
-            radius = radius * 0.018f, center = Offset(cx, cy))
-    }
-}
+        // Numerals
+        if (showNumerals) {
+            val textRadius = radius * 0.70f
+            drawIntoCanvas { canvas ->
+                val paint = android.graphics.Paint().apply {
+                    isAntiAlias = true
+                    color = android.graphics.Color.argb(
+                        (numeralColor.alpha * 255).toInt(),
+                        (numeralColor.red * 255).toInt(),
+                        (numeralColor.green * 255).toInt(),
+                        (numeralColor.blue * 255).toInt()
+                    )
+                    textAlign = android.graphics.Paint.Align.CENTER
+                    textSize = radius * 0.14f
+                }
+                for (h in 1..12) {
+                    val ang = Math.toRadians(h * 30.0 - 90.0)
+                    val tx = (center.x + textRadius * cos(ang)).toFloat()
+                    val ty = (center.y + textRadius * sin(ang)).toFloat() + paint.textSize / 3.5f
+                    canvas.nativeCanvas.drawText(h.toString(), tx, ty, paint)
+                }
+            }
+        }
 
-private fun angleFor(unit: Float, max: Float): Float =
-    ((unit / max) * 360f - 90f).toRadians()
+        // Hands
+        fun handEnd(angle: Double, length: Float): Offset =
+            Offset(
+                (center.x + length * cos(angle)).toFloat(),
+                (center.y + length * sin(angle)).toFloat()
+            )
 
-private fun Float.toRadians(): Float = (this * Math.PI / 180.0).toFloat()
+        // Hour hand
+        drawLine(
+            color = hourMinuteColor,
+            start = center,
+            end = handEnd(hourAngle - Math.PI / 2.0, radius * 0.52f),
+            strokeWidth = hourStroke,
+            cap = StrokeCap.Round
+        )
 
-private fun pointOnCircle(cx: Float, cy: Float, r: Float, angle: Float): Offset =
-    Offset(cx + r * cos(angle), cy + r * sin(angle))
+        // Minute hand
+        drawLine(
+            color = hourMinuteColor,
+            start = center,
+            end = handEnd(minuteAngle - Math.PI / 2.0, radius * 0.74f),
+            strokeWidth = minuteStroke,
+            cap = StrokeCap.Round
+        )
 
-private fun DrawScope.drawNumerals(cx: Float, cy: Float, radius: Float, color: Color) {
-    val paint = android.graphics.Paint().apply {
-        isAntiAlias = true
-        textAlign = android.graphics.Paint.Align.CENTER
-        textSize = radius * 0.18f
-        this.color = color.toArgb()
-        typeface = android.graphics.Typeface.SANS_SERIF
-    }
-    drawIntoCanvas { c ->
-        val nc = c.nativeCanvas
-        for (i in 1..12) {
-            val angle = angleFor(i.toFloat(), 12f)
-            val pos = pointOnCircle(cx, cy, radius, angle)
-            val textY = pos.y + (paint.textSize * 0.35f)
-            nc.drawText(i.toString(), pos.x, textY, paint)
+        // Second hand (skip in ambient)
+        if (!ambientMode) {
+            drawLine(
+                color = secondColor,
+                start = center,
+                end = handEnd(secondAngle - Math.PI / 2.0, radius * 0.82f),
+                strokeWidth = secondStroke,
+                cap = StrokeCap.Round
+            )
+
+            // Tail for balance
+            drawLine(
+                color = secondColor.copy(alpha = 0.7f),
+                start = center,
+                end = Offset(
+                    (center.x - radius * 0.18f * cos(secondAngle - Math.PI / 2.0)).toFloat(),
+                    (center.y - radius * 0.18f * sin(secondAngle - Math.PI / 2.0)).toFloat()
+                ),
+                strokeWidth = secondStroke,
+                cap = StrokeCap.Round,
+                pathEffect = PathEffect.dashPathEffect(floatArrayOf(6f, 6f))
+            )
+        }
+
+        // Center hub
+        drawCircle(color = hourMinuteColor, radius = hourStroke * 0.9f, center = center)
+        if (!ambientMode) {
+            drawCircle(color = secondColor, radius = secondStroke * 2.2f, center = center)
         }
     }
 }
-

@@ -32,6 +32,7 @@ class WatchCaptureActivity : ComponentActivity() {
             val app = context.applicationContext as KronosApp
             val db = app.database
             val scope = rememberCoroutineScope()
+
             var make by remember { mutableStateOf("") }
             var model by remember { mutableStateOf("") }
             val previewView = remember { PreviewView(context) }
