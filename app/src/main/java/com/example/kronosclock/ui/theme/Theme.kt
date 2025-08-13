@@ -1,4 +1,4 @@
-package com.example.kronosanalogclock.ui.theme
+package com.example.kronosclock.ui.theme
 
 import android.os.Build
 import androidx.compose.material3.MaterialTheme
