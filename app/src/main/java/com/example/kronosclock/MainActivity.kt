@@ -12,7 +12,14 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
@@ -20,7 +27,13 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -116,14 +129,29 @@ private fun KronosClockApp() {
             Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Text(
                 "Kronos Clock",
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold
             )
-            Spacer(Modifier.height(12.dp))
+
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Button(onClick = { showWatches = true }) { Text("Manage Watches") }
+                Button(onClick = {
+                    kronos.sync()
+                    isSynced = true
+                    lastSyncStatus = "Manual sync triggered"
+                }) { Text("Sync Now") }
+                Button(onClick = {
+                    fetchCityAndZone(context, fusedClient) { c, z ->
+                        city = c
+                        zoneId = z ?: ZoneId.systemDefault()
+                    }
+                }) { Text("Refresh Location") }
+            }
 
             ElevatedCard(Modifier.padding(end = 8.dp)) {
                 Column(Modifier.padding(16.dp)) {
@@ -141,8 +169,6 @@ private fun KronosClockApp() {
                 }
             }
 
-            Spacer(Modifier.height(16.dp))
-
             Card {
                 Column(Modifier.padding(16.dp)) {
                     Text("NTP Status", fontWeight = FontWeight.SemiBold)
@@ -153,29 +179,8 @@ private fun KronosClockApp() {
                             "Not synced yet"
                     )
                     lastSyncStatus?.let { Text(it) }
-                    Spacer(Modifier.height(8.dp))
-                    Row {
-                        Button(onClick = {
-                            kronos.sync()
-                            isSynced = true
-                            lastSyncStatus = "Manual sync triggered"
-                        }) { Text("Sync Now") }
-
-                        Spacer(Modifier.width(12.dp))
-
-                        Button(onClick = {
-                            fetchCityAndZone(context, fusedClient) { c, z ->
-                                city = c
-                                zoneId = z ?: ZoneId.systemDefault()
-                            }
-                        }) { Text("Refresh Location") }
-                    }
                 }
             }
-
-            Spacer(Modifier.height(16.dp))
-
-            Button(onClick = { showWatches = true }) { Text("Manage Watches") }
         }
     }
 }
