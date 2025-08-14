@@ -119,8 +119,10 @@ private fun KronosClockApp() {
     if (showWatches) {
         WatchListScreen(
             watchDao = watchDao,
-            onCapture = {
-                context.startActivity(Intent(context, WatchCaptureActivity::class.java))
+            onCapture = { id ->
+                context.startActivity(
+                    Intent(context, WatchCaptureActivity::class.java).putExtra("watch_id", id)
+                )
             },
             onBack = { showWatches = false }
         )

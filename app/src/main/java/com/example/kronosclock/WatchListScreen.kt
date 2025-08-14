@@ -17,7 +17,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun WatchListScreen(
     watchDao: WatchDao,
-    onCapture: () -> Unit,
+    onCapture: (Long) -> Unit,
     onBack: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
@@ -32,7 +32,13 @@ fun WatchListScreen(
         Spacer(Modifier.height(8.dp))
         LazyColumn(Modifier.weight(1f)) {
             items(watches) { watch ->
-                Text("${'$'}{watch.make} ${'$'}{watch.model}")
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("${'$'}{watch.make} ${'$'}{watch.model}")
+                    Button(onClick = { onCapture(watch.id) }) { Text("Capture") }
+                }
             }
         }
         OutlinedTextField(
@@ -59,7 +65,6 @@ fun WatchListScreen(
                     }
                 }
             }) { Text("Add") }
-            Button(onClick = onCapture) { Text("Capture") }
         }
     }
 }

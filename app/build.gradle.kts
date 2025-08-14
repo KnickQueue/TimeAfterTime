@@ -74,4 +74,7 @@ dependencies {
     implementation("androidx.room:room-runtime:$roomVersion")
     implementation("androidx.room:room-ktx:$roomVersion")
     kapt("androidx.room:room-compiler:$roomVersion")
+
+    // TensorFlow Lite for watch-hand detection
+    implementation("org.tensorflow:tensorflow-lite-task-vision:0.4.4")
 }

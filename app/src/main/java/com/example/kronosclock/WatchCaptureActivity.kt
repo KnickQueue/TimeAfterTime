@@ -28,7 +28,13 @@ import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import com.example.kronosclock.data.WatchDatabase
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
+import java.time.Instant
+import java.time.ZoneId
 import java.util.Locale
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -36,15 +42,18 @@ import java.util.concurrent.Executors
 class WatchCaptureActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent { MaterialTheme { WatchCaptureScreen() } }
+        val watchId = intent.getLongExtra("watch_id", -1L)
+        setContent { MaterialTheme { WatchCaptureScreen(watchId) } }
     }
 }
 
 @Composable
-private fun WatchCaptureScreen() {
+private fun WatchCaptureScreen(watchId: Long) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val currentContext by rememberUpdatedState(context)
+    val watchDao = remember { WatchDatabase.getInstance(context).watchDao() }
+    val scope = rememberCoroutineScope()
 
     val cameraExecutor: ExecutorService = remember { Executors.newSingleThreadExecutor() }
     DisposableEffect(Unit) { onDispose { cameraExecutor.shutdown() } }
@@ -126,12 +135,36 @@ private fun WatchCaptureScreen() {
                             }
 
                             override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
-                                val uri = outputFileResults.savedUri?.toString() ?: "MediaStore"
-                                Toast.makeText(
-                                    currentContext,
-                                    "Saved: $uri",
-                                    Toast.LENGTH_SHORT
-                                ).show()
+                                val uri = outputFileResults.savedUri
+                                if (uri != null && watchId > 0) {
+                                    scope.launch(Dispatchers.IO) {
+                                        val bitmap = MediaStore.Images.Media.getBitmap(currentContext.contentResolver, uri)
+                                        val watchTime = WatchTimeAnalyzer.detectTime(bitmap, currentContext)
+                                        if (watchTime != null) {
+                                            val nowMs = KronosApp.kronosClock.getCurrentTimeMs() ?: System.currentTimeMillis()
+                                            val actualTime = Instant.ofEpochMilli(nowMs).atZone(ZoneId.systemDefault()).toLocalTime()
+                                            val offset = java.time.Duration.between(actualTime, watchTime).toMillis()
+                                            val watch = watchDao.get(watchId)
+                                            watch?.let {
+                                                val prev = it.lastOffsetMs
+                                                watchDao.update(it.copy(lastSyncedEpochMs = nowMs, lastOffsetMs = offset))
+                                                withContext(Dispatchers.Main) {
+                                                    val diffStr = String.format(Locale.US, "%+.2fs", offset / 1000.0)
+                                                    val drift = prev?.let { o -> offset - o }
+                                                    val driftStr = drift?.let { String.format(Locale.US, " (%+.2fs since last)", it / 1000.0) } ?: ""
+                                                    Toast.makeText(currentContext, "Offset $diffStr$driftStr", Toast.LENGTH_LONG).show()
+                                                }
+                                            }
+                                        } else {
+                                            withContext(Dispatchers.Main) {
+                                                Toast.makeText(currentContext, "Unable to read watch time", Toast.LENGTH_LONG).show()
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    val message = "Saved: ${uri?.toString() ?: "MediaStore"}"
+                                    Toast.makeText(currentContext, message, Toast.LENGTH_SHORT).show()
+                                }
                             }
                         }
                     )
