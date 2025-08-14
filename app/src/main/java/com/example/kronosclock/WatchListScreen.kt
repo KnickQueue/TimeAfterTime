@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -14,10 +15,11 @@ import com.example.kronosclock.data.Watch
 import com.example.kronosclock.data.WatchDao
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WatchListScreen(
     watchDao: WatchDao,
-    onCapture: () -> Unit,
+    onCapture: (Long) -> Unit,
     onBack: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
@@ -32,7 +34,13 @@ fun WatchListScreen(
         Spacer(Modifier.height(8.dp))
         LazyColumn(Modifier.weight(1f)) {
             items(watches) { watch ->
-                Text("${'$'}{watch.make} ${'$'}{watch.model}")
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("${'$'}{watch.make} ${'$'}{watch.model}")
+                    Button(onClick = { onCapture(watch.id) }) { Text("Capture") }
+                }
             }
         }
         OutlinedTextField(
@@ -59,7 +67,6 @@ fun WatchListScreen(
                     }
                 }
             }) { Text("Add") }
-            Button(onClick = onCapture) { Text("Capture") }
         }
     }
 }
