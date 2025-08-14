@@ -138,32 +138,68 @@ private fun WatchCaptureScreen(watchId: Long) {
                                 val uri = outputFileResults.savedUri
                                 if (uri != null && watchId > 0) {
                                     scope.launch(Dispatchers.IO) {
-                                        val bitmap = MediaStore.Images.Media.getBitmap(currentContext.contentResolver, uri)
-                                        val watchTime = WatchTimeAnalyzer.detectTime(bitmap, currentContext)
+                                        val bitmap = MediaStore.Images.Media.getBitmap(
+                                            currentContext.contentResolver, uri
+                                        )
+                                        val watchTime = WatchTimeAnalyzer.detectTime(
+                                            bitmap, currentContext
+                                        )
                                         if (watchTime != null) {
-                                            val nowMs = KronosApp.kronosClock.getCurrentTimeMs() ?: System.currentTimeMillis()
-                                            val actualTime = Instant.ofEpochMilli(nowMs).atZone(ZoneId.systemDefault()).toLocalTime()
-                                            val offset = java.time.Duration.between(actualTime, watchTime).toMillis()
+                                            val nowMs = (currentContext.applicationContext as KronosApp)
+                                                .kronos
+                                                .getCurrentTimeMs()
+                                                ?: System.currentTimeMillis()
+
+                                            val actualTime = Instant.ofEpochMilli(nowMs)
+                                                .atZone(ZoneId.systemDefault())
+                                                .toLocalTime()
+
+                                            val offset =
+                                                java.time.Duration.between(actualTime, watchTime)
+                                                    .toMillis()
+
                                             val watch = watchDao.get(watchId)
                                             watch?.let {
                                                 val prev = it.lastOffsetMs
-                                                watchDao.update(it.copy(lastSyncedEpochMs = nowMs, lastOffsetMs = offset))
+                                                watchDao.update(
+                                                    it.copy(
+                                                        lastSyncedEpochMs = nowMs,
+                                                        lastOffsetMs = offset
+                                                    )
+                                                )
                                                 withContext(Dispatchers.Main) {
-                                                    val diffStr = String.format(Locale.US, "%+.2fs", offset / 1000.0)
+                                                    val diffStr = String.format(
+                                                        Locale.US, "%+.2fs", offset / 1000.0
+                                                    )
                                                     val drift = prev?.let { o -> offset - o }
-                                                    val driftStr = drift?.let { String.format(Locale.US, " (%+.2fs since last)", it / 1000.0) } ?: ""
-                                                    Toast.makeText(currentContext, "Offset $diffStr$driftStr", Toast.LENGTH_LONG).show()
+                                                    val driftStr = drift?.let {
+                                                        String.format(
+                                                            Locale.US,
+                                                            " (%+.2fs since last)",
+                                                            it / 1000.0
+                                                        )
+                                                    } ?: ""
+                                                    Toast.makeText(
+                                                        currentContext,
+                                                        "Offset $diffStr$driftStr",
+                                                        Toast.LENGTH_LONG
+                                                    ).show()
                                                 }
                                             }
                                         } else {
                                             withContext(Dispatchers.Main) {
-                                                Toast.makeText(currentContext, "Unable to read watch time", Toast.LENGTH_LONG).show()
+                                                Toast.makeText(
+                                                    currentContext,
+                                                    "Unable to read watch time",
+                                                    Toast.LENGTH_LONG
+                                                ).show()
                                             }
                                         }
                                     }
                                 } else {
                                     val message = "Saved: ${uri?.toString() ?: "MediaStore"}"
-                                    Toast.makeText(currentContext, message, Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(currentContext, message, Toast.LENGTH_SHORT)
+                                        .show()
                                 }
                             }
                         }

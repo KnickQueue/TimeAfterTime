@@ -38,7 +38,9 @@ android {
     composeOptions { kotlinCompilerExtensionVersion = "1.5.14" }
 
     packaging {
-        resources.excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        resources {
+            excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        }
     }
 }
 
@@ -57,7 +59,7 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.4")
 
     // Kronos NTP clock (published version)
-    implementation("com.lyft.kronos:kronos-android:0.0.1-alpha11")
+    implementation("com.lyft.kronos:kronos-android:0.8.1-alpha11")
 
     // Location services
     implementation("com.google.android.gms:play-services-location:21.0.1")

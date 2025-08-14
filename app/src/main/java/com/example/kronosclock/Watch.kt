@@ -9,5 +9,6 @@ data class Watch(
     val make: String,
     val model: String,
     val lastSyncedEpochMs: Long? = null,
+    val lastSyncedEpochMs2: Long? = null,
     val lastOffsetMs: Long? = null
 )

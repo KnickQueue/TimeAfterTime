@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
@@ -32,7 +31,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -60,7 +58,9 @@ class MainActivity : ComponentActivity() {
 private fun KronosClockApp() {
     val context = LocalContext.current
     val fusedClient = remember { LocationServices.getFusedLocationProviderClient(context) }
-    val kronos: KronosClock = remember { KronosApp.kronosClock }
+    val kronos: KronosClock = remember {
+        (context.applicationContext as KronosApp).kronos
+    }
     val watchDao = remember { WatchDatabase.getInstance(context).watchDao() }
     var showWatches by remember { mutableStateOf(false) }
 
@@ -121,7 +121,8 @@ private fun KronosClockApp() {
             watchDao = watchDao,
             onCapture = { id ->
                 context.startActivity(
-                    Intent(context, WatchCaptureActivity::class.java).putExtra("watch_id", id)
+                    Intent(context, WatchCaptureActivity::class.java)
+                        .putExtra("watch_id", id)
                 )
             },
             onBack = { showWatches = false }
