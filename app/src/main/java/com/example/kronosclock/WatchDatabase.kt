@@ -5,7 +5,7 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 
-@Database(entities = [Watch::class], version = 1, exportSchema = false)
+@Database(entities = [Watch::class], version = 2, exportSchema = false)
 abstract class WatchDatabase : RoomDatabase() {
     abstract fun watchDao(): WatchDao
 
@@ -18,7 +18,10 @@ abstract class WatchDatabase : RoomDatabase() {
                     context.applicationContext,
                     WatchDatabase::class.java,
                     "watch-db"
-                ).build().also { INSTANCE = it }
+                )
+                    .fallbackToDestructiveMigration()
+                    .build()
+                    .also { INSTANCE = it }
             }
     }
 }
